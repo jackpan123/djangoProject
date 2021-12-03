@@ -6,7 +6,7 @@ from plotly.offline import plot
 from plotly.graph_objs import Scatter
 from pyspark.context import SparkContext
 from pyspark.sql.context import SQLContext
-from pyspark.sql.functions import regexp_extract, regexp_replace, udf, hour
+from pyspark.sql.functions import *
 from pyspark.sql.session import SparkSession
 import glob
 # Create your views here.
@@ -63,7 +63,14 @@ performance_log_df = normal_log_df.select(
 
 
 def index(request):
-    hour_df = performance_log_df.select(hour(col('time')).alias('hour')) \
+    plot_div = get_hour_pd_df(performance_log_df)
+
+    # time_pd_df = performance_log_df.select(col('time')).groupBy(window(col('time'), '1 minutes')).count().orderBy('window')
+
+    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div})
+
+def get_hour_pd_df(data_df):
+    hour_df = data_df.select(hour(col('time')).alias('hour')) \
         .groupBy('hour').count().orderBy('hour')
 
     hour_pd_df = (hour_df.toPandas())
@@ -77,11 +84,11 @@ def index(request):
     x_data = []
     y_data = []
     for key in data_result:
-        x_data.append(key)
+        x_data.append(str(key) + '点')
         y_data.append(data_result[key])
-        print(key, data_result[key])
     plot_div = plot([Scatter(x=x_data, y=y_data,
-                        mode='lines', name='test',
-                        opacity=0.8, marker_color='green')],
-               output_type='div')
-    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div})
+                             mode='lines', name='test',
+                             opacity=0.8, marker_color='green')],
+                    output_type='div')
+
+    return plot_div
