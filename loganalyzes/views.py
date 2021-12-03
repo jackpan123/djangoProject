@@ -12,9 +12,8 @@ import glob
 # Create your views here.
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import col
+from datetime import datetime
 import pandas as pd
-
-
 
 sc = SparkContext()
 sqlContext = SQLContext(sc)
@@ -23,9 +22,11 @@ raw_data_files = glob.glob('/Users/jackpan/JackPanDocuments/temporary/tet/edp.20
 base_df = spark.read.text(raw_data_files)
 normal_log_df = base_df.filter(base_df['value'].rlike(r'URI:.*最大内存:.*已分配内存:.*最大可用内存:.*'))
 
+
 def count_seconds(col_name):
     time_arr = col_name.split(':')
     return int(time_arr[0] * 3600) + int(time_arr[1] * 60) + int(float(time_arr[2]))
+
 
 ts_pattern = r'(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})'
 
@@ -64,10 +65,10 @@ performance_log_df = normal_log_df.select(
 
 def index(request):
     plot_div = get_hour_pd_df(performance_log_df)
+    time_div = get_time_pd_df(performance_log_df)
 
-    # time_pd_df = performance_log_df.select(col('time')).groupBy(window(col('time'), '1 minutes')).count().orderBy('window')
+    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div})
 
-    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div})
 
 def get_hour_pd_df(data_df):
     hour_df = data_df.select(hour(col('time')).alias('hour')) \
@@ -92,3 +93,24 @@ def get_hour_pd_df(data_df):
                     output_type='div')
 
     return plot_div
+
+
+def get_time_pd_df(data_df):
+    time_df = performance_log_df.select(col('time')).groupBy(window(col('time'), '1 minutes')).count().orderBy(
+        'window')
+    time_pd_df = (time_df.toPandas())
+    x_data = []
+    y_data = []
+    for index, row in time_pd_df.iterrows():
+        date_start = row['window']['start']
+        x_data.append(date_start)
+        y_data.append(row['count'])
+
+    print(x_data)
+    print(y_data)
+    time_div = plot([Scatter(x=x_data, y=y_data,
+                             mode='lines', name='test2',
+                             opacity=0.8, marker_color='green')],
+                    output_type='div')
+
+    return time_div
