@@ -65,9 +65,6 @@ performance_log_df = normal_log_df.select(
 def index(request):
     hour_df = performance_log_df.select(hour(col('time')).alias('hour')) \
         .groupBy('hour').count().orderBy('hour')
-    # hour_df.show(10)
-    # for item in hour_df:
-    #     print(item['hour'])
 
     hour_pd_df = (hour_df.toPandas())
     data_result = {}
@@ -77,10 +74,12 @@ def index(request):
 
     for index, row in hour_pd_df.iterrows():
         data_result[row['hour']] = row['count']
+    x_data = []
+    y_data = []
     for key in data_result:
+        x_data.append(key)
+        y_data.append(data_result[key])
         print(key, data_result[key])
-    x_data = [0,1,2,3,4,5,6,9]
-    y_data = [x**2 for x in x_data]
     plot_div = plot([Scatter(x=x_data, y=y_data,
                         mode='lines', name='test',
                         opacity=0.8, marker_color='green')],
