@@ -3,7 +3,7 @@ import re
 from django.shortcuts import render
 import plotly.graph_objs as go
 from plotly.offline import plot
-from plotly.graph_objs import Scatter
+import plotly.express as px
 from pyspark.context import SparkContext
 from pyspark.sql.context import SQLContext
 from pyspark.sql.functions import *
@@ -11,7 +11,6 @@ from pyspark.sql.session import SparkSession
 import glob
 # Create your views here.
 from pyspark.sql.types import StringType
-from pyspark.sql.functions import col
 from datetime import datetime
 import pandas as pd
 
@@ -67,7 +66,19 @@ def index(request):
     plot_div = get_hour_pd_df(performance_log_df)
     time_div = get_time_pd_df(performance_log_df)
 
-    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div})
+    spend_time_df = performance_log_df.select(col('request_uri'), col('spend_time')).orderBy(desc('spend_time')).limit(10)
+    spend_time_pd_df = (spend_time_df.toPandas())
+    x_data = []
+    y_data = []
+    for index, row in spend_time_pd_df.iterrows():
+        x_data.append(row['request_uri'])
+        y_data.append(row['spend_time'])
+
+    print(x_data)
+    print(y_data)
+    spend_time_div = plot([go.Bar(x=x_data, y=y_data, name='test')],
+                    output_type='div')
+    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div, 'spend_time_div': spend_time_div,})
 
 
 def get_hour_pd_df(data_df):
@@ -87,7 +98,7 @@ def get_hour_pd_df(data_df):
     for key in data_result:
         x_data.append(str(key) + '点')
         y_data.append(data_result[key])
-    plot_div = plot([Scatter(x=x_data, y=y_data,
+    plot_div = plot([go.Scatter(x=x_data, y=y_data,
                              mode='lines', name='test',
                              opacity=0.8, marker_color='green')],
                     output_type='div')
@@ -108,7 +119,7 @@ def get_time_pd_df(data_df):
 
     print(x_data)
     print(y_data)
-    time_div = plot([Scatter(x=x_data, y=y_data,
+    time_div = plot([go.Scatter(x=x_data, y=y_data,
                              mode='lines', name='test2',
                              opacity=0.8, marker_color='green')],
                     output_type='div')

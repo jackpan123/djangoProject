@@ -14,5 +14,9 @@
     <p>当日请求变化情况（分钟）</p>
     {{ time_div }}
 {% endautoescape %}
+{% autoescape off %}
+    <p>当日请求变化情况（分钟）</p>
+    {{ spend_time_div }}
+{% endautoescape %}
 </body>
 </html>
