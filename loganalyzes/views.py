@@ -33,7 +33,8 @@ def count_seconds(col_name):
 
 ts_pattern = r'(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})'
 spend_time_pattern = r'(耗时：\d+:\d+:\d+\.\d+)'
-request_uri_pattern = r'((\/\w+)+)'
+request_uri_pattern = r'((\/\w+\.?\d?)+)'
+
 # 最大内存
 max_memory_pattern = r'(最大内存: \d+m)'
 # 已分配内存
