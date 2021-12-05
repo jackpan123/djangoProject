@@ -23,7 +23,9 @@ normal_log_df = base_df.filter(base_df['value'].rlike(r'URI:.*最大内存:.*已
 
 
 def count_seconds(col_name):
+
     time_arr = col_name.split(':')
+
     return int(time_arr[0] * 3600) + int(time_arr[1] * 60) + int(float(time_arr[2]))
 
 
@@ -55,7 +57,7 @@ performance_log_df = normal_log_df.select(
     regexp_extract('value', already_allow_memory_free_pattern, 1).alias('free_memory'),
     regexp_extract('value', max_useful_memory_free_pattern, 1).alias('max_can_use_memory'),
 ).withColumn("spend_time", regexp_replace('spend_time', '耗时：', '')) \
-    .withColumn("spend_time", count_seconds_udf('spend_time')) \
+    .withColumn("spend_time", count_seconds_udf('spend_time').cast("long")) \
     .withColumn("max_memory", regexp_replace('max_memory', '(最大内存: |m)', '')) \
     .withColumn("total_memory", regexp_replace('total_memory', '(已分配内存: |m)', '')) \
     .withColumn("free_memory", regexp_replace('free_memory', '(已分配内存中的剩余空间: |m)', '')) \
@@ -65,8 +67,13 @@ performance_log_df = normal_log_df.select(
 def index(request):
     plot_div = get_hour_pd_df(performance_log_df)
     time_div = get_time_pd_df(performance_log_df)
+    spend_time_div = get_spend_time_div(performance_log_df)
 
-    spend_time_df = performance_log_df.select(col('request_uri'), col('spend_time')).orderBy(desc('spend_time')).limit(10)
+    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div, 'spend_time_div': spend_time_div,})
+
+
+def get_spend_time_div(data_df):
+    spend_time_df = performance_log_df.select(col('request_uri'), col('spend_time')).sort(desc('spend_time')).limit(20)
     spend_time_pd_df = (spend_time_df.toPandas())
     x_data = []
     y_data = []
@@ -74,12 +81,9 @@ def index(request):
         x_data.append(row['request_uri'])
         y_data.append(row['spend_time'])
 
-    print(x_data)
-    print(y_data)
     spend_time_div = plot([go.Bar(x=x_data, y=y_data, name='test')],
-                    output_type='div')
-    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div, 'spend_time_div': spend_time_div,})
-
+                          output_type='div')
+    return spend_time_div
 
 def get_hour_pd_df(data_df):
     hour_df = data_df.select(hour(col('time')).alias('hour')) \
@@ -117,8 +121,6 @@ def get_time_pd_df(data_df):
         x_data.append(date_start)
         y_data.append(row['count'])
 
-    print(x_data)
-    print(y_data)
     time_div = plot([go.Scatter(x=x_data, y=y_data,
                              mode='lines', name='test2',
                              opacity=0.8, marker_color='green')],
