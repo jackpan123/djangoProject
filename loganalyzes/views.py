@@ -23,7 +23,6 @@ normal_log_df = base_df.filter(base_df['value'].rlike(r'URI:.*最大内存:.*已
 
 
 def count_seconds(col_name):
-
     time_arr = col_name.split(':')
 
     return int(time_arr[0] * 3600) + int(time_arr[1] * 60) + int(float(time_arr[2]))
@@ -65,29 +64,38 @@ performance_log_df = normal_log_df.select(
 
 
 def index(request):
-    # plot_div = get_hour_pd_df(performance_log_df)
-    # time_div = get_time_pd_df(performance_log_df)
-    # spend_time_div = get_spend_time_div(performance_log_df)
+    plot_div = get_hour_pd_df(performance_log_df)
+    time_div = get_time_pd_df(performance_log_df)
+    spend_time_div = get_spend_time_div(performance_log_df)
+    memory_div = get_memory_div(performance_log_df)
 
+    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div,
+                                                              'spend_time_div': spend_time_div, 'memory_div': memory_div})
+
+
+def get_memory_div(data_df):
     # 已分配内存 和 剩余内存变化率
-    already_used_memory_df = performance_log_df.select(col('time'), col('total_memory'), col('free_memory'))\
+    already_used_memory_df = performance_log_df.select(col('time'), col('total_memory'), col('free_memory')) \
         .orderBy(asc('time'))
     already_used_memory_pd_df = (already_used_memory_df.toPandas())
     x_data = []
     y_data = []
+    y1_data = []
     for index, row in already_used_memory_pd_df.iterrows():
         x_data.append(row['time'])
         y_data.append(int(row['total_memory']) - int(row['free_memory']))
-    plot_div = plot([go.Scatter(x=x_data, y=y_data,
-                                mode='lines', name='test',
-                                opacity=0.8, marker_color='green')],
+        y1_data.append(int(row['total_memory']))
+    memory_div = plot([go.Scatter(x=x_data, y=y_data,
+                                mode='lines', name='已使用内存MB',
+                                opacity=0.8, marker_color='green'), go.Scatter(x=x_data, y=y1_data,
+                                                                               mode='lines', name='总内存MB',
+                                                                               opacity=0.8, marker_color='red')],
                     output_type='div')
-    # return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div, 'spend_time_div': spend_time_div,})
-    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div,})
+    return memory_div
 
 
 def get_spend_time_div(data_df):
-    spend_time_df = performance_log_df.select(col('request_uri'), col('spend_time')).sort(desc('spend_time')).limit(20)
+    spend_time_df = data_df.select(col('request_uri'), col('spend_time')).sort(desc('spend_time')).limit(20)
     spend_time_pd_df = (spend_time_df.toPandas())
     x_data = []
     y_data = []
@@ -98,6 +106,7 @@ def get_spend_time_div(data_df):
     spend_time_div = plot([go.Bar(x=x_data, y=y_data, name='test')],
                           output_type='div')
     return spend_time_div
+
 
 def get_hour_pd_df(data_df):
     hour_df = data_df.select(hour(col('time')).alias('hour')) \
@@ -117,8 +126,8 @@ def get_hour_pd_df(data_df):
         x_data.append(str(key) + '点')
         y_data.append(data_result[key])
     plot_div = plot([go.Scatter(x=x_data, y=y_data,
-                             mode='lines', name='test',
-                             opacity=0.8, marker_color='green')],
+                                mode='lines', name='test',
+                                opacity=0.8, marker_color='green')],
                     output_type='div')
 
     return plot_div
@@ -136,8 +145,8 @@ def get_time_pd_df(data_df):
         y_data.append(row['count'])
 
     time_div = plot([go.Scatter(x=x_data, y=y_data,
-                             mode='lines', name='test2',
-                             opacity=0.8, marker_color='green')],
+                                mode='lines', name='test2',
+                                opacity=0.8, marker_color='green')],
                     output_type='div')
 
     return time_div

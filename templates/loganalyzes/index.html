@@ -18,5 +18,9 @@
     <p>接口请求最长时间（降序）</p>
     {{ spend_time_div }}
 {% endautoescape %}
+{% autoescape off %}
+    <p>请求内存变化率</p>
+    {{ memory_div }}
+{% endautoescape %}
 </body>
 </html>
