@@ -65,11 +65,25 @@ performance_log_df = normal_log_df.select(
 
 
 def index(request):
-    plot_div = get_hour_pd_df(performance_log_df)
-    time_div = get_time_pd_df(performance_log_df)
-    spend_time_div = get_spend_time_div(performance_log_df)
+    # plot_div = get_hour_pd_df(performance_log_df)
+    # time_div = get_time_pd_df(performance_log_df)
+    # spend_time_div = get_spend_time_div(performance_log_df)
 
-    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div, 'spend_time_div': spend_time_div,})
+    # 已分配内存 和 剩余内存变化率
+    already_used_memory_df = performance_log_df.select(col('time'), col('total_memory'), col('free_memory'))\
+        .orderBy(asc('time'))
+    already_used_memory_pd_df = (already_used_memory_df.toPandas())
+    x_data = []
+    y_data = []
+    for index, row in already_used_memory_pd_df.iterrows():
+        x_data.append(row['time'])
+        y_data.append(int(row['total_memory']) - int(row['free_memory']))
+    plot_div = plot([go.Scatter(x=x_data, y=y_data,
+                                mode='lines', name='test',
+                                opacity=0.8, marker_color='green')],
+                    output_type='div')
+    # return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div, 'spend_time_div': spend_time_div,})
+    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div,})
 
 
 def get_spend_time_div(data_df):
