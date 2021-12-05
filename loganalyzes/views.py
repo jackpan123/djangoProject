@@ -5,6 +5,7 @@ from plotly.offline import plot
 import plotly.express as px
 from pyspark.context import SparkContext
 from pyspark.sql.context import SQLContext
+import pyspark.sql.functions as F
 from pyspark.sql.functions import *
 from pyspark.sql.session import SparkSession
 import glob
@@ -90,10 +91,11 @@ def analyze_edp_log_offline(file_url):
         regexp_extract('value', max_useful_memory_free_pattern, 1).alias('max_can_use_memory'),
     ).withColumn("spend_time", regexp_replace('spend_time', '耗时：', '')) \
         .withColumn("spend_time", count_seconds_udf('spend_time').cast("long")) \
-        .withColumn("max_memory", regexp_replace('max_memory', '(最大内存: |m)', '')) \
-        .withColumn("total_memory", regexp_replace('total_memory', '(已分配内存: |m)', '')) \
-        .withColumn("free_memory", regexp_replace('free_memory', '(已分配内存中的剩余空间: |m)', '')) \
-        .withColumn("max_can_use_memory", regexp_replace('max_can_use_memory', '(最大可用内存: |m)', ''))
+        .withColumn("max_memory", regexp_replace('max_memory', '(最大内存: |m)', '').cast('int')) \
+        .withColumn("total_memory", regexp_replace('total_memory', '(已分配内存: |m)', '').cast('int')) \
+        .withColumn("free_memory", regexp_replace('free_memory', '(已分配内存中的剩余空间: |m)', '').cast('int')) \
+        .withColumn("max_can_use_memory", regexp_replace('max_can_use_memory', '(最大可用内存: |m)', '').cast('int')) \
+        .withColumn("used_memory", col('total_memory') - col('free_memory'))
 
     return performance_log_df
 
@@ -102,6 +104,13 @@ def handle_uploaded_file(f, file_url):
     with open(file_url, 'wb+') as destination:
         for chunk in f.chunks():
             destination.write(chunk)
+
+
+def get_request_uri_memory(data_df):
+    # 已分配内存 和 剩余内存变化率
+    already_used_memory_df = data_df.select(col('request_uri'),
+                                            expr(col('total_memory') - col('free_memory')).alias('used_memory')) \
+        .groupBy('request_uri').agg(F.sum('used_memory')).show(10, truncate=False)
 
 
 def get_memory_div(data_df):
