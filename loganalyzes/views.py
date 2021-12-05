@@ -116,7 +116,7 @@ def get_request_uri_memory(data_df):
 
 def get_memory_div(data_df):
     # 已分配内存 和 剩余内存变化率
-    already_used_memory_df = data_df.select(col('time'), col('total_memory'), col('free_memory')) \
+    already_used_memory_df = data_df.select(col('time'), col('total_memory'), col('used_memory')) \
         .orderBy(asc('time'))
     already_used_memory_pd_df = (already_used_memory_df.toPandas())
     x_data = []
@@ -124,7 +124,7 @@ def get_memory_div(data_df):
     y1_data = []
     for index, row in already_used_memory_pd_df.iterrows():
         x_data.append(row['time'])
-        y_data.append(int(row['total_memory']) - int(row['free_memory']))
+        y_data.append(row['used_memory'])
         y1_data.append(int(row['total_memory']))
     memory_div = plot([go.Scatter(x=x_data, y=y_data,
                                   mode='lines', name='已使用内存MB',
