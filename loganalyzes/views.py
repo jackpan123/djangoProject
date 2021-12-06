@@ -70,8 +70,10 @@ def upload_file(request):
             time_div = get_time_pd_df(performance_log_df)
             spend_time_div = get_spend_time_div(performance_log_df)
             memory_div = get_memory_div(performance_log_df)
+            request_memory_div = get_request_uri_memory(performance_log_df)
             return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div,
                                                                       'spend_time_div': spend_time_div,
+                                                                      'request_memory_div': request_memory_div,
                                                                       'memory_div': memory_div})
     else:
         form = UploadFileForm()
@@ -109,10 +111,19 @@ def handle_uploaded_file(f, file_url):
 
 def get_request_uri_memory(data_df):
     # 已分配内存 和 剩余内存变化率
-    already_used_memory_df = data_df.select(col('request_uri'),
-                                            expr(col('total_memory') - col('free_memory')).alias('used_memory')) \
-        .groupBy('request_uri').agg(F.sum('used_memory')).show(10, truncate=False)
 
+    request_uri_used_memory_df = data_df.select(col('request_uri'), col('used_memory')).filter(~col('request_uri').startswith('/api/system/')) \
+        .groupBy('request_uri').agg(F.sum('used_memory').alias('used_memory_sum')).sort(desc('used_memory_sum'))
+    request_uri_used_memory_pd_df = (request_uri_used_memory_df.toPandas())
+    x_data = []
+    y_data = []
+    for index, row in request_uri_used_memory_pd_df.iterrows():
+        x_data.append(row['request_uri'])
+        y_data.append(row['used_memory_sum'])
+    request_memory_div = plot([go.Bar(x=x_data, y=y_data, name='test')],
+                          output_type='div')
+
+    return request_memory_div
 
 def get_memory_div(data_df):
     # 已分配内存 和 剩余内存变化率

@@ -22,5 +22,9 @@
     <p>请求内存变化率</p>
     {{ memory_div }}
 {% endautoescape %}
+{% autoescape off %}
+    <p>内存累计使用最多的请求排名（MB）</p>
+    {{ request_memory_div }}
+{% endautoescape %}
 </body>
 </html>
