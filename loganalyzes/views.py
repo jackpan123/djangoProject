@@ -13,6 +13,8 @@ import glob
 from pyspark.sql.types import StringType
 from datetime import datetime
 import pandas as pd
+from pyspark.streaming import StreamingContext
+
 from .forms import UploadFileForm
 from django.http import HttpResponseRedirect
 
@@ -55,6 +57,17 @@ def index(request):
     # return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div,
     #                                                           'spend_time_div': spend_time_div,
     #                                                           'memory_div': memory_div})
+
+    # ssc = StreamingContext(sc, 1)
+    #
+    # lines = ssc.socketTextStream("localhost", int(9999))
+    # counts = lines.flatMap(lambda line: line.split(" ")) \
+    #     .map(lambda word: (word, 1)) \
+    #     .reduceByKey(lambda a, b: a + b)
+    # counts.saveAsTextFiles("/Users/jackpan/JackPanDocuments/temporary/edp_log", "out")
+    #
+    # ssc.start()
+    # ssc.awaitTermination()
     return render(request, "loganalyzes/index.html")
 
 
