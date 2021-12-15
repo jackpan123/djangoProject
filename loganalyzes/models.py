@@ -22,7 +22,8 @@ class SocketLog(models.Model):
     @admin.display
     def start_monitor(self):
         return format_html(
-            '<a>Start monitor</a>'
+            '<a href="/loganalyzes/{}/start_monitor/">Start monitor</a>',
+            self.pk
         )
     # def was_published_recently(self):
     #     now = timezone.now()

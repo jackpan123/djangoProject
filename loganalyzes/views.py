@@ -1,5 +1,5 @@
 import re
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 import plotly.graph_objs as go
 from plotly.offline import plot
 import plotly.express as px
@@ -17,6 +17,8 @@ from pyspark.streaming import StreamingContext
 
 from .forms import UploadFileForm
 from django.http import HttpResponseRedirect
+
+from .models import SocketLog
 
 sc = SparkContext()
 sqlContext = SQLContext(sc)
@@ -69,6 +71,12 @@ def index(request):
     # ssc.start()
     # ssc.awaitTermination()
     return render(request, "loganalyzes/index.html")
+
+
+def start_monitor(request, host_id):
+    log_info = get_object_or_404(SocketLog, pk=host_id)
+    print(log_info.host_ip)
+    return render(request, "loganalyzes/success.html")
 
 
 def upload_file(request):
