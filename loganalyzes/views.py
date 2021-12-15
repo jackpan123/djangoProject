@@ -80,17 +80,21 @@ def start_monitor(request, host_id):
     log_info = get_object_or_404(SocketLog, pk=host_id)
     client = SSHClient()
     client.load_system_host_keys()
-    client.connect("192.168.38.11", 22, "root", "11")
-    stdin, stdout, stderr = client.exec_command('cd /usr/local')
-    lines = stdout.readlines()
-    for line in lines:
-        print(line)
-
-    stdin1, stdout1, stderr1 = client.exec_command('ls -l')
-    lines1 = stdout1.readlines()
+    client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
+    sftp = client.open_sftp()
+    sftp.put("/Users/jackpan/JackPanDocuments/temporary/test-sftp/tcpserver.c", "/usr/local/spring-edp/tcpserver.c")
+    print(log_info.log_position)
+    sftp.close()
+    stdin, stdout, stderr = client.exec_command('cd /usr/local/spring-edp && nohup gcc tcpserver.c -o tcpserver > tcpserver_compiler_log.out 2>&1 &')
+    lines1 = stdout.readlines()
+    print(lines1)
     for line in lines1:
         print(line)
     client.close()
+    client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
+    client.exec_command('cd /usr/local/spring-edp && nohup ./tcpserver ' + log_info.log_position + ' > tcpserver.out 2>&1 &')
+    client.close()
+
     return render(request, "loganalyzes/success.html")
 
 
