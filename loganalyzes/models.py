@@ -1,6 +1,10 @@
 from django.db import models
 
 # Create your models here.
+from django.utils.html import format_html
+from django.contrib import admin
+
+
 class SocketLog(models.Model):
     def __str__(self):
         return self.host_ip
@@ -14,6 +18,12 @@ class SocketLog(models.Model):
     #     ordering='pub_date',
     #     description='Published recently?'
     # )
+
+    @admin.display
+    def start_monitor(self):
+        return format_html(
+            '<a>Start monitor</a>'
+        )
     # def was_published_recently(self):
     #     now = timezone.now()
     #     return now - datetime.timedelta(days=1) <= self.pub_date <= now
