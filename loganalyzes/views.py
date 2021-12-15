@@ -1,6 +1,8 @@
 import re
+
 from django.shortcuts import render, redirect, get_object_or_404
 import plotly.graph_objs as go
+from paramiko.client import SSHClient
 from plotly.offline import plot
 import plotly.express as px
 from pyspark.context import SparkContext
@@ -19,6 +21,7 @@ from .forms import UploadFileForm
 from django.http import HttpResponseRedirect
 
 from .models import SocketLog
+import subprocess
 
 sc = SparkContext()
 sqlContext = SQLContext(sc)
@@ -75,7 +78,19 @@ def index(request):
 
 def start_monitor(request, host_id):
     log_info = get_object_or_404(SocketLog, pk=host_id)
-    print(log_info.host_ip)
+    client = SSHClient()
+    client.load_system_host_keys()
+    client.connect("192.168.38.11", 22, "root", "11")
+    stdin, stdout, stderr = client.exec_command('cd /usr/local')
+    lines = stdout.readlines()
+    for line in lines:
+        print(line)
+
+    stdin1, stdout1, stderr1 = client.exec_command('ls -l')
+    lines1 = stdout1.readlines()
+    for line in lines1:
+        print(line)
+    client.close()
     return render(request, "loganalyzes/success.html")
 
 
