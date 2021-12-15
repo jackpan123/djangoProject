@@ -2,15 +2,15 @@ from django.db import models
 
 # Create your models here.
 class SocketLog(models.Model):
-    # def __str__(self):
-    #     return self.question_text
+    def __str__(self):
+        return self.host_ip
     host_ip = models.CharField(max_length=200)
     host_port = models.IntegerField()
     username = models.CharField(max_length=200)
     password = models.CharField(max_length=200)
     log_position = models.CharField(max_length=500)
     # @admin.display(
-    #     boolean=True,
+    #     boolean=True,os
     #     ordering='pub_date',
     #     description='Published recently?'
     # )
