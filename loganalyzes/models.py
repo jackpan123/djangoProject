@@ -13,6 +13,7 @@ class SocketLog(models.Model):
     username = models.CharField(max_length=200)
     password = models.CharField(max_length=200)
     log_position = models.CharField(max_length=500)
+    log_save_position = models.CharField(max_length=500, default=None, blank=True, null=True)
     # @admin.display(
     #     boolean=True,os
     #     ordering='pub_date',
