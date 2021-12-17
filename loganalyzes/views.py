@@ -81,21 +81,26 @@ def start_monitor(request, host_id):
     client = SSHClient()
     client.load_system_host_keys()
     client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
+
+    cutting = log_info.log_position.rindex("/")
+    log_folder = log_info.log_position[0:cutting]
     sftp = client.open_sftp()
-    sftp.put("/Users/jackpan/JackPanDocuments/temporary/test-sftp/tcpserver.c", "/usr/local/spring-edp/tcpserver.c")
+    sftp.put("/Users/jackpan/JackPanDocuments/temporary/test-sftp/tcpserver.c", log_folder + "/tcpserver.c")
     print(log_info.log_position)
     sftp.close()
-    stdin, stdout, stderr = client.exec_command('cd /usr/local/spring-edp && nohup gcc tcpserver.c -o tcpserver > tcpserver_compiler_log.out 2>&1 &')
-    lines1 = stdout.readlines()
-    print(lines1)
-    for line in lines1:
-        print(line)
+    stdin, stdout, stderr = client.exec_command(
+        'cd ' + log_folder + ' && nohup gcc tcpserver.c -o tcpserver > tcpserver_compiler_log.out 2>&1 &')
     client.close()
     client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
-    client.exec_command('cd /usr/local/spring-edp && nohup ./tcpserver ' + log_info.log_position + ' > tcpserver.out 2>&1 &')
+    client.exec_command(
+        'cd ' + log_folder + ' && nohup ./tcpserver ' + log_info.log_position + ' > tcpserver.out 2>&1 &')
     client.close()
 
     return render(request, "loganalyzes/success.html")
+
+
+def stop_monitor(request, host_id):
+    print(host_id)
 
 
 def upload_file(request):
@@ -152,7 +157,8 @@ def handle_uploaded_file(f, file_url):
 def get_request_uri_memory(data_df):
     # 已分配内存 和 剩余内存变化率
 
-    request_uri_used_memory_df = data_df.select(col('request_uri'), col('used_memory')).filter(~col('request_uri').startswith('/api/system/')) \
+    request_uri_used_memory_df = data_df.select(col('request_uri'), col('used_memory')).filter(
+        ~col('request_uri').startswith('/api/system/')) \
         .groupBy('request_uri').agg(F.sum('used_memory').alias('used_memory_sum')).sort(desc('used_memory_sum'))
     request_uri_used_memory_pd_df = (request_uri_used_memory_df.toPandas())
     x_data = []
@@ -161,9 +167,10 @@ def get_request_uri_memory(data_df):
         x_data.append(row['request_uri'])
         y_data.append(row['used_memory_sum'])
     request_memory_div = plot([go.Bar(x=x_data, y=y_data, name='test')],
-                          output_type='div')
+                              output_type='div')
 
     return request_memory_div
+
 
 def get_memory_div(data_df):
     # 已分配内存 和 剩余内存变化率
