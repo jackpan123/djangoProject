@@ -79,26 +79,28 @@ def index(request):
 
 def start_monitor(request, host_id):
     log_info = get_object_or_404(SocketLog, pk=host_id)
-    # client = SSHClient()
-    # client.load_system_host_keys()
-    # client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
+    client = SSHClient()
+    client.load_system_host_keys()
+    client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
     #
     client_folder = "/Users/jackpan/JackPanDocuments/temporary/test-sftp/"
-    # cutting = log_info.log_position.rindex("/")
-    # log_folder = log_info.log_position[0:cutting]
-    # sftp = client.open_sftp()
-    # sftp.put(client_folder + "tcpserver.c", log_folder + "/tcpserver.c")
-    # print(log_info.log_position)
-    # sftp.close()
-    # stdin, stdout, stderr = client.exec_command(
-    #     'cd ' + log_folder + ' && nohup gcc tcpserver.c -o tcpserver > tcpserver_compiler_log.out 2>&1 &')
-    # client.close()
-    # client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
-    # client.exec_command(
-    #     'cd ' + log_folder + ' && nohup ./tcpserver ' + log_info.log_position + ' > tcpserver.out 2>&1 &')
-    # client.close()
+    cutting = log_info.log_position.rindex("/")
+    log_folder = log_info.log_position[0:cutting]
+    sftp = client.open_sftp()
+    sftp.put(client_folder + "tcpserver.c", log_folder + "/tcpserver.c")
+    print(log_info.log_position)
+    sftp.close()
+    stdin, stdout, stderr = client.exec_command(
+        'cd ' + log_folder + ' && nohup gcc tcpserver.c -o tcpserver > tcpserver_compiler_log.out 2>&1 &')
+    client.close()
+    client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
+    print(log_folder)
+    server_command = 'cd ' + log_folder + ' && nohup ./tcpserver ' + log_info.log_position + ' ' + str(
+        log_info.host_port) + ' > tcpserver.out 2>&1 &'
+    print(server_command)
+    client.exec_command(server_command)
+    client.close()
     # Run client to receive data from server
-    # subprocess.run(["ls", "-l"])
     out_log = "nohup" + str(host_id) + ".out"
     # create save position
     log_save_position = client_folder + "analyze" + str(host_id) + "/"
@@ -107,6 +109,7 @@ def start_monitor(request, host_id):
 
     cmd = 'cd ' + client_folder + ' && nohup ./tcpclient ' + log_save_position + 'edp.out ' \
           + str(log_info.host_port) + ' > ' + out_log + ' 2>&1 &'
+    print(cmd)
     os.system(cmd)
 
     return render(request, "loganalyzes/success.html")
