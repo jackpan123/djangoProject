@@ -82,7 +82,6 @@ def start_monitor(request, host_id):
     client = SSHClient()
     client.load_system_host_keys()
     client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
-    #
     client_folder = "/Users/jackpan/JackPanDocuments/temporary/test-sftp/"
     cutting = log_info.log_position.rindex("/")
     log_folder = log_info.log_position[0:cutting]
@@ -111,7 +110,8 @@ def start_monitor(request, host_id):
           + str(log_info.host_port) + ' > ' + out_log + ' 2>&1 &'
     print(cmd)
     os.system(cmd)
-
+    log_info.log_save_position = log_save_position + 'edp.out'
+    log_info.save()
     return render(request, "loganalyzes/success.html")
 
 
