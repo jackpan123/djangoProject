@@ -14,23 +14,12 @@ class SocketLog(models.Model):
     password = models.CharField(max_length=200)
     log_position = models.CharField(max_length=500)
     log_save_position = models.CharField(max_length=500, default=None, blank=True, null=True)
-    # @admin.display(
-    #     boolean=True,os
-    #     ordering='pub_date',
-    #     description='Published recently?'
-    # )
 
     @admin.display
     def start_monitor(self):
         return format_html(
-            '<a href="/loganalyzes/{}/start_monitor/">Start monitor</a>',
-            self.pk
-        )
-
-    @admin.display
-    def view_monitor_data(self):
-        return format_html(
-            '<a href="/loganalyzes/{}/view_monitor_data/">View monitor data</a>',
+            '<a href="/loganalyzes/{}/start_monitor/">Start monitor </a><a href="/loganalyzes/{}/view_monitor_data/">View monitor data</a>',
+            self.host_ip,
             self.pk
         )
     # def was_published_recently(self):

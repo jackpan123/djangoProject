@@ -1,11 +1,12 @@
 import os
 import re
-
+import django
+django.setup()
+from .models import SocketLog
 from django.shortcuts import render, redirect, get_object_or_404
 import plotly.graph_objs as go
 from paramiko.client import SSHClient
 from plotly.offline import plot
-import plotly.express as px
 from pyspark.context import SparkContext
 from pyspark.sql.context import SQLContext
 import pyspark.sql.functions as F
@@ -14,25 +15,12 @@ from pyspark.sql.session import SparkSession
 import glob
 # Create your views here.
 from pyspark.sql.types import StringType
-from datetime import datetime
 import pandas as pd
-from pyspark.streaming import StreamingContext
-
 from .forms import UploadFileForm
-from django.http import HttpResponseRedirect
-
-from .models import SocketLog
-import subprocess
 
 sc = SparkContext()
 sqlContext = SQLContext(sc)
 spark = SparkSession(sc)
-
-
-# raw_data_files = glob.glob('/Users/jackpan/JackPanDocuments/temporary/tet/edp.2021-12-02.out')
-# base_df = spark.read.text(raw_data_files)
-# normal_log_df = base_df.filter(base_df['value'].rlike(r'URI:.*最大内存:.*已分配内存:.*最大可用内存:.*'))
-
 
 def count_seconds(col_name):
     time_arr = col_name.split(':')
@@ -124,8 +112,11 @@ def start_monitor(request, host_id):
 
 
 def view_monitor_data(request, host_id):
+    result_message = "Start monitor success"
+
     log_info = get_object_or_404(SocketLog, pk=host_id)
     file_url = log_info.log_save_position
+    print(file_url)
     performance_log_df = analyze_edp_log_offline(file_url)
     plot_div = get_hour_pd_df(performance_log_df)
     time_div = get_time_pd_df(performance_log_df)
@@ -136,6 +127,9 @@ def view_monitor_data(request, host_id):
                                                               'spend_time_div': spend_time_div,
                                                               'request_memory_div': request_memory_div,
                                                               'memory_div': memory_div})
+    return render(request, "loganalyzes/success.html", {
+        'result_message': result_message
+    })
 
 def upload_file(request):
     if request.method == 'POST':
@@ -162,6 +156,7 @@ def upload_file(request):
 def analyze_edp_log_offline(file_url):
     raw_data_files = glob.glob(file_url)
     base_df = spark.read.text(raw_data_files)
+    base_df.show(10)
     normal_log_df = base_df.filter(base_df['value'].rlike(r'URI:.*最大内存:.*已分配内存:.*最大可用内存:.*'))
     performance_log_df = normal_log_df.select(
         regexp_extract('value', ts_pattern, 1).alias('time'),
@@ -179,6 +174,7 @@ def analyze_edp_log_offline(file_url):
         .withColumn("max_can_use_memory", regexp_replace('max_can_use_memory', '(最大可用内存: |m)', '').cast('int')) \
         .withColumn("used_memory", col('total_memory') - col('free_memory'))
 
+    performance_log_df.show(10)
     return performance_log_df
 
 
