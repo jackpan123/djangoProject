@@ -26,6 +26,13 @@ class SocketLog(models.Model):
             '<a href="/loganalyzes/{}/start_monitor/">Start monitor</a>',
             self.pk
         )
+
+    @admin.display
+    def view_monitor_data(self):
+        return format_html(
+            '<a href="/loganalyzes/{}/view_monitor_data/">View monitor data</a>',
+            self.pk
+        )
     # def was_published_recently(self):
     #     now = timezone.now()
     #     return now - datetime.timedelta(days=1) <= self.pub_date <= now

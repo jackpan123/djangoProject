@@ -123,9 +123,19 @@ def start_monitor(request, host_id):
     })
 
 
-def stop_monitor(request, host_id):
-    print(host_id)
-
+def view_monitor_data(request, host_id):
+    log_info = get_object_or_404(SocketLog, pk=host_id)
+    file_url = log_info.log_save_position
+    performance_log_df = analyze_edp_log_offline(file_url)
+    plot_div = get_hour_pd_df(performance_log_df)
+    time_div = get_time_pd_df(performance_log_df)
+    spend_time_div = get_spend_time_div(performance_log_df)
+    memory_div = get_memory_div(performance_log_df)
+    request_memory_div = get_request_uri_memory(performance_log_df)
+    return render(request, "loganalyzes/index.html", context={'plot_div': plot_div, 'time_div': time_div,
+                                                              'spend_time_div': spend_time_div,
+                                                              'request_memory_div': request_memory_div,
+                                                              'memory_div': memory_div})
 
 def upload_file(request):
     if request.method == 'POST':
