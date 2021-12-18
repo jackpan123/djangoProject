@@ -79,40 +79,48 @@ def index(request):
 
 def start_monitor(request, host_id):
     log_info = get_object_or_404(SocketLog, pk=host_id)
-    client = SSHClient()
-    client.load_system_host_keys()
-    client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
-    client_folder = "/Users/jackpan/JackPanDocuments/temporary/test-sftp/"
-    cutting = log_info.log_position.rindex("/")
-    log_folder = log_info.log_position[0:cutting]
-    sftp = client.open_sftp()
-    sftp.put(client_folder + "tcpserver.c", log_folder + "/tcpserver.c")
-    print(log_info.log_position)
-    sftp.close()
-    stdin, stdout, stderr = client.exec_command(
-        'cd ' + log_folder + ' && nohup gcc tcpserver.c -o tcpserver > tcpserver_compiler_log.out 2>&1 &')
-    client.close()
-    client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
-    print(log_folder)
-    server_command = 'cd ' + log_folder + ' && nohup ./tcpserver ' + log_info.log_position + ' ' + str(
-        log_info.host_port) + ' > tcpserver.out 2>&1 &'
-    print(server_command)
-    client.exec_command(server_command)
-    client.close()
-    # Run client to receive data from server
-    out_log = "nohup" + str(host_id) + ".out"
-    # create save position
-    log_save_position = client_folder + "analyze" + str(host_id) + "/"
-    log_save_position_command = "mkdir " + log_save_position
-    os.system(log_save_position_command)
+    result_message = "Start monitor success"
+    if len(log_info.log_save_position) == 0:
 
-    cmd = 'cd ' + client_folder + ' && nohup ./tcpclient ' + log_save_position + 'edp.out ' \
-          + str(log_info.host_port) + ' > ' + out_log + ' 2>&1 &'
-    print(cmd)
-    os.system(cmd)
-    log_info.log_save_position = log_save_position + 'edp.out'
-    log_info.save()
-    return render(request, "loganalyzes/success.html")
+        client = SSHClient()
+        client.load_system_host_keys()
+        client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
+        client_folder = "/Users/jackpan/JackPanDocuments/temporary/test-sftp/"
+        cutting = log_info.log_position.rindex("/")
+        log_folder = log_info.log_position[0:cutting]
+        sftp = client.open_sftp()
+        sftp.put(client_folder + "tcpserver.c", log_folder + "/tcpserver.c")
+        print(log_info.log_position)
+        sftp.close()
+        stdin, stdout, stderr = client.exec_command(
+            'cd ' + log_folder + ' && nohup gcc tcpserver.c -o tcpserver > tcpserver_compiler_log.out 2>&1 &')
+        client.close()
+        client.connect(log_info.host_ip, 22, log_info.username, log_info.password)
+        print(log_folder)
+        server_command = 'cd ' + log_folder + ' && nohup ./tcpserver ' + log_info.log_position + ' ' + str(
+            log_info.host_port) + ' > tcpserver.out 2>&1 &'
+        print(server_command)
+        client.exec_command(server_command)
+        client.close()
+        # Run client to receive data from server
+        out_log = "nohup" + str(host_id) + ".out"
+        # create save position
+        log_save_position = client_folder + "analyze" + str(host_id) + "/"
+        log_save_position_command = "mkdir " + log_save_position
+        os.system(log_save_position_command)
+
+        cmd = 'cd ' + client_folder + ' && nohup ./tcpclient ' + log_save_position + 'edp.out ' \
+              + str(log_info.host_port) + ' > ' + out_log + ' 2>&1 &'
+        print(cmd)
+        os.system(cmd)
+        log_info.log_save_position = log_save_position + 'edp.out'
+        log_info.save()
+    else:
+        result_message = "Monitor is running!"
+        print(result_message)
+    return render(request, "loganalyzes/success.html", {
+        'result_message': result_message
+    })
 
 
 def stop_monitor(request, host_id):
